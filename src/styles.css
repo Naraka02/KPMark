@@ -31,11 +31,33 @@ textarea {
   z-index: 10;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 10px 14px;
   background: #fcfbf8;
   border-bottom: 1px solid #d8d2c3;
   box-shadow: 0 1px 0 rgba(20, 28, 32, 0.04);
+}
+
+.toolbar__document {
+  min-width: 180px;
+  max-width: 300px;
+  display: grid;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.toolbar__document strong,
+.document-card__main strong,
+.workspace-sidebar__header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar__document span {
+  font-size: 12px;
+  color: #61706d;
 }
 
 .toolbar__group,
@@ -59,6 +81,11 @@ textarea {
   cursor: pointer;
 }
 
+.toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .segmented button {
   width: auto;
   min-width: 68px;
@@ -80,6 +107,133 @@ textarea {
 .workspace {
   flex: 1;
   min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  background: #ebe7dc;
+}
+
+.workspace-sidebar {
+  position: sticky;
+  top: 57px;
+  align-self: start;
+  height: calc(100vh - 57px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid #d1caba;
+  background: #f9f8f4;
+}
+
+.workspace-sidebar__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 10px;
+  align-items: center;
+}
+
+.workspace-sidebar__header h1 {
+  margin: 2px 0 0;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.workspace-sidebar__eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: #5b6765;
+}
+
+.workspace-sidebar button,
+.document-card__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c6beb0;
+  border-radius: 6px;
+  background: #fff;
+  color: #263236;
+  cursor: pointer;
+}
+
+.workspace-sidebar__header button {
+  width: 38px;
+  height: 38px;
+}
+
+.save-state {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #d7d0c2;
+  border-radius: 6px;
+  background: #fff;
+  color: #4f5f5c;
+  font-size: 13px;
+}
+
+.save-state--error {
+  border-color: #d59c9c;
+  background: #fff5f5;
+  color: #7d2629;
+}
+
+.document-list {
+  display: grid;
+  gap: 8px;
+}
+
+.document-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #d1caba;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.document-card.is-active {
+  border-color: #477f77;
+  box-shadow: inset 3px 0 0 #477f77;
+}
+
+.document-card__main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.document-card__main span {
+  overflow: hidden;
+  color: #6a6257;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-card__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.document-card__actions button {
+  width: 28px;
+  height: 28px;
+}
+
+.workspace-content {
+  min-height: 0;
+  min-width: 0;
 }
 
 .pane {
@@ -92,7 +246,7 @@ textarea {
 }
 
 .ProseMirror {
-  width: min(980px, calc(100vw - 48px));
+  width: min(980px, calc(100vw - 348px));
   min-height: calc(100vh - 105px);
   margin: 0 auto;
   padding: 42px 52px;
@@ -110,7 +264,7 @@ textarea {
 }
 
 .pane--source textarea {
-  width: min(1100px, calc(100vw - 48px));
+  width: min(1100px, calc(100vw - 348px));
   min-height: calc(100vh - 105px);
   display: block;
   margin: 0 auto;
@@ -288,7 +442,24 @@ textarea {
 
 @media (max-width: 780px) {
   .toolbar {
-    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .toolbar__document {
+    width: 100%;
+    max-width: none;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-sidebar {
+    position: static;
+    height: auto;
+    max-height: 280px;
+    border-right: 0;
+    border-bottom: 1px solid #d1caba;
   }
 
   .pane {
@@ -314,8 +485,13 @@ textarea {
 
 @media print {
   .toolbar,
+  .workspace-sidebar,
   .reader-sidebar {
     display: none;
+  }
+
+  .workspace {
+    display: block;
   }
 
   .reader-shell {

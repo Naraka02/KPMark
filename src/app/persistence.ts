@@ -1,24 +1,39 @@
 import { sampleMarkdown } from '../markdown/sample';
+import { ensureValidWorkspace, migrateMarkdownToWorkspace, type WorkspaceSnapshot } from './workspace';
 
 const dbName = 'markdown-typography-studio';
 const storeName = 'documents';
-const documentKey = 'current';
-const localStorageKey = 'mkd:document';
+const legacyDocumentKey = 'current';
+const workspaceKey = 'workspace';
+const legacyLocalStorageKey = 'mkd:document';
+const workspaceLocalStorageKey = 'mkd:workspace:v2';
 
-type StoredDocument = {
+type StoredLegacyDocument = {
   id: string;
   markdown: string;
   updatedAt: string;
 };
 
-function fallbackLoad() {
+function fallbackLoadWorkspace() {
   if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem(localStorageKey);
+  const raw = localStorage.getItem(workspaceLocalStorageKey);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as WorkspaceSnapshot;
+  } catch {
+    return null;
+  }
 }
 
-function fallbackSave(markdown: string) {
+function fallbackLoadLegacyMarkdown() {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage.getItem(legacyLocalStorageKey);
+}
+
+function fallbackSaveWorkspace(snapshot: WorkspaceSnapshot) {
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(localStorageKey, markdown);
+    localStorage.setItem(workspaceLocalStorageKey, JSON.stringify(snapshot));
   }
 }
 
@@ -29,7 +44,7 @@ function openDatabase() {
       return;
     }
 
-    const request = indexedDB.open(dbName, 1);
+    const request = indexedDB.open(dbName, 2);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(storeName)) {
@@ -41,43 +56,56 @@ function openDatabase() {
   });
 }
 
-export async function loadPersistedMarkdown() {
-  try {
-    const db = await openDatabase();
-    return await new Promise<string | null>((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readonly');
-      const request = transaction.objectStore(storeName).get(documentKey);
-      request.onsuccess = () => resolve((request.result as StoredDocument | undefined)?.markdown ?? fallbackLoad());
-      request.onerror = () => reject(request.error ?? new Error('Unable to read document'));
-      transaction.oncomplete = () => db.close();
-    });
-  } catch {
-    return fallbackLoad();
-  }
+async function readRecord<T>(key: string) {
+  const db = await openDatabase();
+  return await new Promise<T | null>((resolve, reject) => {
+    const transaction = db.transaction(storeName, 'readonly');
+    const request = transaction.objectStore(storeName).get(key);
+    request.onsuccess = () => resolve((request.result as T | undefined) ?? null);
+    request.onerror = () => reject(request.error ?? new Error('Unable to read workspace'));
+    transaction.oncomplete = () => db.close();
+  });
 }
 
-export async function savePersistedMarkdown(markdown: string) {
-  fallbackSave(markdown);
+export async function loadPersistedWorkspace(idFactory: () => string): Promise<WorkspaceSnapshot> {
+  try {
+    const storedWorkspace = await readRecord<(WorkspaceSnapshot & { id: string })>(workspaceKey);
+    if (storedWorkspace) {
+      return ensureValidWorkspace(storedWorkspace, idFactory());
+    }
+
+    const legacy = await readRecord<StoredLegacyDocument>(legacyDocumentKey);
+    if (legacy?.markdown) {
+      return migrateMarkdownToWorkspace(legacy.markdown, idFactory());
+    }
+  } catch {
+    const fallbackWorkspace = fallbackLoadWorkspace();
+    if (fallbackWorkspace) return ensureValidWorkspace(fallbackWorkspace, idFactory());
+  }
+
+  const fallbackMarkdown = fallbackLoadLegacyMarkdown();
+  if (fallbackMarkdown) return migrateMarkdownToWorkspace(fallbackMarkdown, idFactory());
+
+  return migrateMarkdownToWorkspace(sampleMarkdown, idFactory());
+}
+
+export async function savePersistedWorkspace(snapshot: WorkspaceSnapshot) {
+  fallbackSaveWorkspace(snapshot);
   try {
     const db = await openDatabase();
     await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(storeName, 'readwrite');
       transaction.objectStore(storeName).put({
-        id: documentKey,
-        markdown,
-        updatedAt: new Date().toISOString()
-      } satisfies StoredDocument);
+        id: workspaceKey,
+        ...snapshot
+      });
       transaction.oncomplete = () => {
         db.close();
         resolve();
       };
-      transaction.onerror = () => reject(transaction.error ?? new Error('Unable to save document'));
+      transaction.onerror = () => reject(transaction.error ?? new Error('Unable to save workspace'));
     });
   } catch {
-    fallbackSave(markdown);
+    fallbackSaveWorkspace(snapshot);
   }
-}
-
-export async function loadInitialMarkdown() {
-  return (await loadPersistedMarkdown()) ?? sampleMarkdown;
 }

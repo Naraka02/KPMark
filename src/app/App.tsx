@@ -79,12 +79,16 @@ function WorkspaceSidebar({
         <div>
           <p className="workspace-sidebar__eyebrow">Workspace</p>
           <h1>{activeDocument?.title ?? 'Documents'}</h1>
+          <span>{documents.length} local document{documents.length === 1 ? '' : 's'}</span>
         </div>
         <button title="New document" aria-label="New document" onClick={onCreate}>
           <FilePlus2 size={18} />
         </button>
       </div>
-      <p className={`save-state save-state--${saveStatus}`}>{statusText(saveStatus, lastSavedAt)}</p>
+      <div className={`save-state save-state--${saveStatus}`}>
+        <span aria-hidden="true" />
+        <p>{statusText(saveStatus, lastSavedAt)}</p>
+      </div>
       <div className="document-list" role="list">
         {documents.map((document) => (
           <article

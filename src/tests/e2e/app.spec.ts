@@ -74,3 +74,23 @@ test('imports markdown as a new workspace document', async ({ page }) => {
   await page.getByRole('button', { name: 'source' }).click();
   await expect(page.getByLabel('Markdown source editor').locator('textarea')).toContainText('Imported body');
 });
+
+test('desktop and mobile layouts keep core controls visible without horizontal overflow', async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await expect(page.getByLabel('Current document')).toBeVisible();
+  await expect(page.getByLabel('Workspace documents')).toBeVisible();
+  await expect(page.getByLabel('Editor tools')).toBeVisible();
+  await expect(page.locator('.ProseMirror')).toBeVisible();
+  await expect(page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).resolves.toBe(true);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByLabel('Current document')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'reader' })).toBeVisible();
+  await page.getByRole('button', { name: 'reader' }).click();
+  await expect(page.getByRole('heading', { name: 'Reader settings' })).toBeVisible();
+  await expect(page.locator('.reader-page')).toBeVisible();
+  await expect(page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).resolves.toBe(true);
+});

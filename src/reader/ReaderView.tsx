@@ -39,29 +39,36 @@ export function ReaderView({
   return (
     <div className="reader-shell">
       <aside className="reader-sidebar">
-        <div className="reader-control">
+        <div className="reader-sidebar__header">
+          <p>Preview</p>
+          <h2>Reader settings</h2>
+        </div>
+        <div className="reader-control reader-control--switch">
           <label>
             <input type="checkbox" checked={advancedTypography} onChange={(event) => onAdvancedTypographyChange(event.target.checked)} />
-            Advanced typography
+            <span>Advanced typography</span>
           </label>
         </div>
-        <label className="range-control">
-          Theme
-          <select value={readerTheme} onChange={(event) => onReaderThemeChange(event.target.value as ReaderTheme)}>
-            <option value="paper">Paper</option>
-            <option value="sepia">Sepia</option>
-            <option value="night">Night</option>
-          </select>
-        </label>
-        <label className="range-control">
-          Font
-          <input type="range" min="15" max="24" value={fontSize} onChange={(event) => onFontSizeChange(Number(event.target.value))} />
-        </label>
-        <label className="range-control">
-          Width
-          <input type="range" min="48" max="92" value={lineWidth} onChange={(event) => onLineWidthChange(Number(event.target.value))} />
-        </label>
-        <nav>
+        <div className="reader-control-grid">
+          <label className="range-control">
+            Theme
+            <select value={readerTheme} onChange={(event) => onReaderThemeChange(event.target.value as ReaderTheme)}>
+              <option value="paper">Paper</option>
+              <option value="sepia">Sepia</option>
+              <option value="night">Night</option>
+            </select>
+          </label>
+          <label className="range-control">
+            Font
+            <input type="range" min="15" max="24" value={fontSize} onChange={(event) => onFontSizeChange(Number(event.target.value))} />
+          </label>
+          <label className="range-control">
+            Width
+            <input type="range" min="48" max="92" value={lineWidth} onChange={(event) => onLineWidthChange(Number(event.target.value))} />
+          </label>
+        </div>
+        <nav aria-label="Table of contents">
+          <span>Contents</span>
           {toc.map((item) => (
             <a key={slug(item.text)} style={{ paddingLeft: `${(item.depth - 1) * 12}px` }} href={`#${slug(item.text)}`}>
               {item.text}

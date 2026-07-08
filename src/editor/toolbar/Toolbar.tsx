@@ -32,18 +32,28 @@ export function Toolbar({
 
   return (
     <header className="toolbar">
-      <div className="toolbar__document" aria-label="Current document">
-        <strong>{documentTitle}</strong>
-        <span>{saveStatus === 'saving' ? 'Saving' : saveStatus === 'error' ? 'Save failed' : 'Local workspace'}</span>
+      <div className="toolbar__brand">
+        <span className="toolbar__mark" aria-hidden="true">
+          K
+        </span>
+        <div className="toolbar__document" aria-label="Current document">
+          <span>KPMark</span>
+          <strong>{documentTitle}</strong>
+        </div>
       </div>
-      <div className="segmented" aria-label="View mode">
-        {(['editor', 'source', 'reader'] as const).map((mode) => (
-          <button key={mode} className={viewMode === mode ? 'is-active' : ''} onClick={() => onModeChange(mode)}>
-            {mode}
-          </button>
-        ))}
+      <div className="toolbar__status" data-status={saveStatus}>
+        {saveStatus === 'saving' ? 'Saving' : saveStatus === 'error' ? 'Save failed' : 'Local workspace'}
       </div>
-      <div className="toolbar__group">
+      <div className="toolbar__cluster toolbar__cluster--modes">
+        <div className="segmented" aria-label="View mode">
+          {(['editor', 'source', 'reader'] as const).map((mode) => (
+            <button key={mode} className={viewMode === mode ? 'is-active' : ''} onClick={() => onModeChange(mode)}>
+              {mode}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="toolbar__cluster" aria-label="Editor tools">
         <button
           title="Paragraph"
           aria-label="Paragraph"
@@ -68,6 +78,7 @@ export function Toolbar({
         >
           <ListOrdered size={18} />
         </button>
+        <span className="toolbar__divider" aria-hidden="true" />
         <button title="Image URL" aria-label="Image URL" disabled={editingDisabled} onClick={addImage}>
           <Image size={18} />
         </button>
@@ -88,7 +99,7 @@ export function Toolbar({
           <Sigma size={18} />
         </button>
       </div>
-      <div className="toolbar__group">
+      <div className="toolbar__cluster" aria-label="File actions">
         <label className="icon-file" title="Import Markdown as document" aria-label="Import Markdown as document">
           <FileUp size={18} />
           <input

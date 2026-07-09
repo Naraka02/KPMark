@@ -7,21 +7,24 @@ import { useEffect, useRef } from 'react';
 import { markdownToHtml, htmlToMarkdown } from '../markdown/markdown';
 import { MermaidNode } from './extensions/MermaidNode';
 import { MathBlockNode, MathInlineNode } from './extensions/MathNodes';
+import { messages, type Language } from '../app/i18n';
 
 type Props = {
   markdown: string;
+  language: Language;
   onMarkdownChange: (markdown: string) => void;
   onEditorReady: (editor: ReturnType<typeof useEditor>) => void;
 };
 
-export function EditorPane({ markdown, onMarkdownChange, onEditorReady }: Props) {
+export function EditorPane({ markdown, language, onMarkdownChange, onEditorReady }: Props) {
+  const t = messages[language];
   const isApplyingExternalUpdate = useRef(false);
   const editor = useEditor({
     extensions: [
       StarterKit,
       Link.configure({ openOnClick: false }),
       Image.configure({ inline: false, allowBase64: true }),
-      Placeholder.configure({ placeholder: 'Start writing Markdown...' }),
+      Placeholder.configure({ placeholder: t.editor.placeholder }),
       MermaidNode,
       MathInlineNode,
       MathBlockNode
@@ -34,7 +37,7 @@ export function EditorPane({ markdown, onMarkdownChange, onEditorReady }: Props)
       if (isApplyingExternalUpdate.current) return;
       onMarkdownChange(htmlToMarkdown(editor.getHTML()));
     }
-  });
+  }, [language]);
 
   useEffect(() => {
     onEditorReady(editor);

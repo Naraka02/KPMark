@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { messages, type Language } from '../app/i18n';
 import { renderMathHtml } from '../features/math/renderMath';
 import { parseReaderBlocks } from './parseBlocks';
 import { AdvancedParagraph } from './AdvancedParagraph';
@@ -12,6 +13,7 @@ type Props = {
   readerTheme: ReaderTheme;
   fontSize: number;
   lineWidth: number;
+  language: Language;
   onAdvancedTypographyChange: (enabled: boolean) => void;
   onReaderThemeChange: (theme: ReaderTheme) => void;
   onFontSizeChange: (size: number) => void;
@@ -19,7 +21,7 @@ type Props = {
 };
 
 function slug(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/(^-|-$)/g, '');
 }
 
 export function ReaderView({
@@ -28,11 +30,13 @@ export function ReaderView({
   readerTheme,
   fontSize,
   lineWidth,
+  language,
   onAdvancedTypographyChange,
   onReaderThemeChange,
   onFontSizeChange,
   onLineWidthChange
 }: Props) {
+  const t = messages[language];
   const blocks = useMemo(() => parseReaderBlocks(markdown), [markdown]);
   const toc = blocks.filter((block) => block.type === 'heading') as Array<{ type: 'heading'; depth: number; text: string }>;
 
@@ -40,37 +44,38 @@ export function ReaderView({
     <div className="reader-shell">
       <aside className="reader-sidebar">
         <div className="reader-sidebar__header">
-          <p>Preview</p>
-          <h2>Reader settings</h2>
+          <p>{t.reader.preview}</p>
+          <h2>{t.reader.settings}</h2>
         </div>
         <div className="reader-control reader-control--switch">
           <label>
             <input type="checkbox" checked={advancedTypography} onChange={(event) => onAdvancedTypographyChange(event.target.checked)} />
-            <span>Advanced typography</span>
+            <span>{t.reader.advancedTypography}</span>
           </label>
         </div>
         <div className="reader-control-grid">
           <label className="range-control">
-            Theme
+            {t.reader.theme}
             <select value={readerTheme} onChange={(event) => onReaderThemeChange(event.target.value as ReaderTheme)}>
-              <option value="paper">Paper</option>
-              <option value="sepia">Sepia</option>
-              <option value="night">Night</option>
+              <option value="paper">{t.reader.themes.paper}</option>
+              <option value="sepia">{t.reader.themes.sepia}</option>
+              <option value="night">{t.reader.themes.night}</option>
             </select>
           </label>
           <label className="range-control">
-            Font
+            <span>{t.reader.fontSize} · {fontSize}px</span>
             <input type="range" min="15" max="24" value={fontSize} onChange={(event) => onFontSizeChange(Number(event.target.value))} />
           </label>
           <label className="range-control">
-            Width
+            <span>{t.reader.lineWidth} · {lineWidth}ch</span>
             <input type="range" min="48" max="92" value={lineWidth} onChange={(event) => onLineWidthChange(Number(event.target.value))} />
           </label>
         </div>
-        <nav aria-label="Table of contents">
-          <span>Contents</span>
-          {toc.map((item) => (
-            <a key={slug(item.text)} style={{ paddingLeft: `${(item.depth - 1) * 12}px` }} href={`#${slug(item.text)}`}>
+        <nav aria-label={t.reader.tableOfContents}>
+          <span>{t.reader.contents}</span>
+          {toc.length === 0 && <em>{t.reader.emptyToc}</em>}
+          {toc.map((item, index) => (
+            <a key={`${slug(item.text)}-${index}`} style={{ paddingLeft: `${(item.depth - 1) * 12}px` }} href={`#${slug(item.text)}`}>
               {item.text}
             </a>
           ))}
@@ -89,7 +94,7 @@ export function ReaderView({
               <p key={index}><InlineMarkdown text={block.text} /></p>
             );
           }
-          if (block.type === 'mermaid') return <MermaidBlock code={block.code} key={index} />;
+          if (block.type === 'mermaid') return <MermaidBlock code={block.code} language={language} key={index} />;
           if (block.type === 'math') return <div className="reader-math" key={index} dangerouslySetInnerHTML={{ __html: renderMathHtml(block.code, true) }} />;
           if (block.type === 'image') return <img className="reader-image" key={index} alt={block.alt} src={block.src} />;
           if (block.type === 'code') return <pre key={index}><code>{block.code}</code></pre>;

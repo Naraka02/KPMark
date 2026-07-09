@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
+import { loadPersistedLanguage, messages, savePersistedLanguage, type Language } from './i18n';
 import { loadPersistedWorkspace, savePersistedWorkspace } from './persistence';
 import {
   createWorkspaceDocument,
@@ -25,6 +26,7 @@ type AppState = {
   readerTheme: ReaderTheme;
   fontSize: number;
   lineWidth: number;
+  language: Language;
   hydrateWorkspace: () => Promise<void>;
   setMarkdown: (markdown: string) => void;
   selectDocument: (documentId: string) => void;
@@ -38,6 +40,7 @@ type AppState = {
   setReaderTheme: (theme: ReaderTheme) => void;
   setFontSize: (fontSize: number) => void;
   setLineWidth: (lineWidth: number) => void;
+  setLanguage: (language: Language) => void;
 };
 
 function buildSnapshot(state: Pick<AppState, 'activeDocumentId' | 'documents'>): WorkspaceSnapshot | null {
@@ -90,6 +93,7 @@ export const useAppStore = create<AppState>((set, get) => {
     readerTheme: 'paper',
     fontSize: 18,
     lineWidth: 74,
+    language: loadPersistedLanguage(),
     hydrateWorkspace: async () => {
       const snapshot = await loadPersistedWorkspace(nanoid);
       const active = snapshot.documents.find((document) => document.id === snapshot.activeDocumentId) ?? snapshot.documents[0];
@@ -127,10 +131,11 @@ export const useAppStore = create<AppState>((set, get) => {
       persistWorkspace();
     },
     createDocument: () => {
+      const t = messages[get().language];
       const document = createWorkspaceDocument({
         id: nanoid(),
-        title: 'Untitled document',
-        markdown: '# Untitled document\n\nStart writing here.\n'
+        title: t.workspace.createdTitle,
+        markdown: t.workspace.createdMarkdown
       });
       set((state) => ({
         documents: [document, ...state.documents],
@@ -153,10 +158,11 @@ export const useAppStore = create<AppState>((set, get) => {
     duplicateDocument: (documentId) => {
       const source = get().documents.find((document) => document.id === documentId);
       if (!source) return;
+      const t = messages[get().language];
       const now = new Date().toISOString();
       const copy = createWorkspaceDocument({
         id: nanoid(),
-        title: `${source.title} copy`,
+        title: `${source.title} ${t.workspace.duplicateSuffix}`,
         markdown: source.markdown,
         createdAt: now,
         updatedAt: now
@@ -184,9 +190,10 @@ export const useAppStore = create<AppState>((set, get) => {
       persistWorkspace();
     },
     importMarkdownDocument: (markdown, filename) => {
+      const fallbackTitle = messages[get().language].workspace.importedFallback;
       const document = createWorkspaceDocument({
         id: nanoid(),
-        title: filename ? filenameToTitle(filename) : deriveDocumentTitle(markdown, 'Imported document'),
+        title: filename ? filenameToTitle(filename, fallbackTitle) : deriveDocumentTitle(markdown, fallbackTitle),
         markdown
       });
       set((state) => ({
@@ -201,6 +208,10 @@ export const useAppStore = create<AppState>((set, get) => {
     setAdvancedTypography: (advancedTypography) => set({ advancedTypography }),
     setReaderTheme: (readerTheme) => set({ readerTheme }),
     setFontSize: (fontSize) => set({ fontSize }),
-    setLineWidth: (lineWidth) => set({ lineWidth })
+    setLineWidth: (lineWidth) => set({ lineWidth }),
+    setLanguage: (language) => {
+      savePersistedLanguage(language);
+      set({ language });
+    }
   };
 });

@@ -1,9 +1,12 @@
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useEffect, useState } from 'react';
+import { currentDocumentLanguage, messages } from '../../app/i18n';
 import { renderMermaidSvg } from '../../features/mermaid/renderMermaid';
 
 export function MermaidView({ node, updateAttributes, selected }: NodeViewProps) {
   const code = node.attrs.code as string;
+  const language = currentDocumentLanguage();
+  const t = messages[language];
   const [svg, setSvg] = useState('');
   const [error, setError] = useState('');
 
@@ -19,19 +22,20 @@ export function MermaidView({ node, updateAttributes, selected }: NodeViewProps)
       .catch((err: unknown) => {
         if (!cancelled) {
           setSvg('');
-          setError(err instanceof Error ? err.message : 'Invalid Mermaid diagram');
+          const message = err instanceof Error ? err.message : t.richNodes.mermaidError;
+          setError(`${t.richNodes.mermaidError}: ${message}`);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, [code, t.richNodes.mermaidError]);
 
   return (
     <NodeViewWrapper className={`rich-node mermaid-node ${selected ? 'is-selected' : ''}`}>
-      <div className="rich-node__header">Mermaid</div>
+      <div className="rich-node__header">{t.richNodes.mermaid}</div>
       <textarea
-        aria-label="Mermaid source"
+        aria-label={t.richNodes.mermaidSource}
         value={code}
         onChange={(event) => updateAttributes({ code: event.target.value })}
       />

@@ -31,12 +31,12 @@ export function deriveDocumentTitle(markdown: string, fallback = 'Untitled docum
   return (firstText || fallback).slice(0, 80);
 }
 
-export function filenameToTitle(filename: string) {
+export function filenameToTitle(filename: string, fallback = 'Imported document') {
   const title = filename
     .replace(/\.(md|markdown|txt)$/i, '')
     .replace(/[-_]+/g, ' ')
     .trim();
-  return title || 'Imported document';
+  return title || fallback;
 }
 
 export function createWorkspaceDocument(params: {
